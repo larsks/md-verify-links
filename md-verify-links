@@ -1,0 +1,55 @@
+#!/usr/bin/python
+
+import os
+import sys
+import argparse
+import mistune
+
+class KeyCheckingLexer(mistune.InlineLexer):
+    def __init__(self, *args, **kwargs):
+        super(KeyCheckingLexer, self).__init__(*args, **kwargs)
+        
+        self.badlinks = []
+
+    def output_reflink(self, m):
+        key = mistune._keyify(m.group(2) or m.group(1))
+        if key not in self.links:
+            self.badlinks.append((key, m))
+
+        return super(KeyCheckingLexer, self).output_reflink(m)
+
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument('--quiet', '-q',
+                   action='store_true')
+    p.add_argument('input', nargs='?')
+    return p.parse_args()
+
+
+def main():
+    res = 0
+    args = parse_args()
+
+    r = mistune.Renderer()
+    inline = KeyCheckingLexer(r)
+    markdown = mistune.Markdown(r, inline=inline)
+
+    with open(args.input) if args.input else sys.stdin as fd:
+        args.input = args.input or '<stdin>'
+        markdown(fd.read())
+
+    if inline.badlinks:
+        res = 1
+        for key, mo in inline.badlinks:
+            if args.quiet:
+                sys.stdout.write(args.input + '\n')
+            else:
+                sys.stderr.write('%s: bad reference to "%s": %s\n' % (
+                    args.input, key, ' '.join(mo.string.splitlines())[:60]))
+
+    return res
+
+
+if __name__ == '__main__':
+    sys.exit(main())
