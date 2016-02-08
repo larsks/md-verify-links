@@ -48,12 +48,16 @@ def main():
     args = parse_args()
     logging.basicConfig(level=args.loglevel)
 
-    with open(args.refs) as fd:
-        refs = yaml.load(fd)
-        # ensure that all refs are available in lower case
-        for k in refs:
-            if k.lower() != k:
-                refs[k.lower()] = refs[k]
+    try:
+        with open(args.refs) as fd:
+            refs = yaml.load(fd)
+            # ensure that all refs are available in lower case
+            for k in refs:
+                if k.lower() != k:
+                    refs[k.lower()] = refs[k]
+    except IOError as err:
+        print '<!-- failed to open refs: %s -->' % err
+        return
 
     r = mistune.Renderer()
     inline = KeyCheckingLexer(r)
