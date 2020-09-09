@@ -67,13 +67,18 @@ def main():
         args.input = args.input or '<stdin>'
         markdown(fd.read())
 
+    seen = set()
     if inline.badlinks:
         for key, mo in inline.badlinks:
             key = key.lower()
-            if key in refs:
+            if key in seen:
+                continue
+            elif key in refs:
                 print '[%s]: %s' % (key, refs[key])
             else:
                 print '[%s]: MISSING!' % (key)
+
+            seen.add(key)
 
 if __name__ == '__main__':
     sys.exit(main())
